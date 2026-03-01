@@ -296,7 +296,7 @@ export default function SharedPassport({
           </h2>
 
           {/* Original language */}
-          {passport.originalAudio && (
+          {passport.originalAudio ? (
             <div className="mb-4">
               <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}
                 className={`p-4 rounded-xl border cursor-pointer transition ${
@@ -328,22 +328,38 @@ export default function SharedPassport({
                 )}
               </AnimatePresence>
             </div>
-          )}
+          ) : passport.transcript ? (
+            <div className="mb-4">
+              <div className="p-4 rounded-xl border bg-white/[0.03] border-white/[0.06]">
+                <div className="flex items-center gap-3 mb-2">
+                  <span className="text-lg">{nativeLangInfo.flag}</span>
+                  <p className="font-medium text-sm">Original ({nativeLangInfo.name})</p>
+                </div>
+                <p className="text-gray-400 text-xs leading-relaxed">&ldquo;{passport.transcript}&rdquo;</p>
+              </div>
+            </div>
+          ) : null}
 
           {/* Generated languages */}
           <motion.div variants={staggerContainer} initial="hidden" animate="show" className="grid grid-cols-2 gap-3">
-            {passport.entries.map((entry, idx) => (
+            {passport.entries.map((entry, idx) => {
+              const hasAudio = entry.audio && entry.audio.length > 10;
+              return (
               <motion.div key={entry.language.code} variants={scaleIn} className="flex flex-col">
                 <motion.div
-                  whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
-                  className={`p-4 rounded-xl border cursor-pointer transition ${
+                  whileHover={hasAudio ? { scale: 1.03 } : {}} whileTap={hasAudio ? { scale: 0.97 } : {}}
+                  className={`p-4 rounded-xl border transition ${
+                    hasAudio ? "cursor-pointer" : ""
+                  } ${
                     playingIdx === idx ? "bg-cyan-900/20 border-cyan-500" : "bg-white/[0.03] border-white/[0.06] hover:border-white/10"
                   }`}
-                  onClick={() => playAudio(idx, entry.audio)}>
+                  onClick={() => hasAudio && playAudio(idx, entry.audio)}>
                   <div className="flex items-center gap-2">
                     <span className="text-xl">{entry.language.flag}</span>
                     <span className="font-medium text-sm">{entry.language.name}</span>
-                    <span className="text-gray-600 text-xs ml-auto">{playingIdx === idx ? "" : "\u25b6"}</span>
+                    {hasAudio && (
+                      <span className="text-gray-600 text-xs ml-auto">{playingIdx === idx ? "" : "\u25b6"}</span>
+                    )}
                     {playingIdx === idx && (
                       <span className="ml-auto flex gap-0.5">
                         {[1, 2, 3].map((b) => (
@@ -354,19 +370,28 @@ export default function SharedPassport({
                       </span>
                     )}
                   </div>
-                </motion.div>
-                <button onClick={() => setExpandedScripts((prev) => { const next = new Set(prev); if (next.has(idx)) next.delete(idx); else next.add(idx); return next; })}
-                  className="text-gray-600 text-xs mt-1.5 ml-1 hover:text-gray-400 transition text-left">
-                  {expandedScripts.has(idx) ? "Hide script" : "View script"}
-                </button>
-                <AnimatePresence>
-                  {expandedScripts.has(idx) && (
-                    <motion.p initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
-                      className="text-gray-500 text-xs mt-1 ml-1 leading-relaxed">{entry.text}</motion.p>
+                  {/* Show text inline when no audio available */}
+                  {!hasAudio && entry.text && (
+                    <p className="text-gray-500 text-xs mt-2 leading-relaxed">{entry.text}</p>
                   )}
-                </AnimatePresence>
+                </motion.div>
+                {hasAudio && (
+                  <>
+                    <button onClick={() => setExpandedScripts((prev) => { const next = new Set(prev); if (next.has(idx)) next.delete(idx); else next.add(idx); return next; })}
+                      className="text-gray-600 text-xs mt-1.5 ml-1 hover:text-gray-400 transition text-left">
+                      {expandedScripts.has(idx) ? "Hide script" : "View script"}
+                    </button>
+                    <AnimatePresence>
+                      {expandedScripts.has(idx) && (
+                        <motion.p initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
+                          className="text-gray-500 text-xs mt-1 ml-1 leading-relaxed">{entry.text}</motion.p>
+                      )}
+                    </AnimatePresence>
+                  </>
+                )}
               </motion.div>
-            ))}
+              );
+            })}
           </motion.div>
         </motion.div>
 

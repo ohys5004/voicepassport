@@ -442,13 +442,19 @@ export default function Home() {
       setEntries(passportEntries);
 
       setProgress("Saving your VoicePassport...");
+      // Strip large base64 audio from entries to stay under Vercel 4.5MB body limit
+      const lightEntries = passportEntries.map((e) => ({
+        language: e.language,
+        text: e.text,
+        audio: "", // audio stays client-side only
+      }));
       const saveRes = await fetch("/api/save-passport", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name,
           title,
-          photo,
+          photo: null, // photo stays client-side only (too large for Vercel)
           photoZoom,
           photoOffsetY,
           email,
@@ -461,8 +467,8 @@ export default function Home() {
             .map((p) => ({ url: platformUrls[p.key], label: p.label })),
           nativeLang,
           transcript: transcribeData.text,
-          originalAudio: originalBase64,
-          entries: passportEntries,
+          originalAudio: null,
+          entries: lightEntries,
         }),
       });
       const saveData = await saveRes.json();
